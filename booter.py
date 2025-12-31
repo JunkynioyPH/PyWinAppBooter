@@ -1,0 +1,193 @@
+from PyQt6.QtWidgets import *
+from PyQt6.QtCore import QFileInfo, Qt, QTimer
+from PyQt6.QtGui import QAbstractFileIconProvider
+import os, sys, json
+
+APP = QApplication([])
+
+class MainWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+
+        # Modifiable Space
+        Canvas = QWidget(self) 
+        self.setCentralWidget(Canvas)
+        # self.setFixedSize(960,540)
+        # self.setMinimumSize(1000,770)
+        # self.setMaximumSize(0,0)
+        
+        # Main Modifiable Space
+        VCanvas = QVBoxLayout()
+        Canvas.setLayout(VCanvas)
+        
+        # Top Bar 
+        TopBar = QHBoxLayout()
+        VCanvas.addLayout(TopBar)
+        TopBar.addLayout(self.topBarContent())
+        
+        # Main Body
+        self.bodyGroup = QGroupBox(" Applications ")
+        VCanvas.addWidget(self.bodyGroup)
+        self.bodyContainer = QHBoxLayout()
+        self.bodyGroup.setLayout(self.bodyContainer)
+        
+        self.showFullScreen()
+        self._appsDisplay()
+
+        
+    def _appsDisplay(self):
+        self.tabPages = QTabWidget()
+        self.bodyContainer.addWidget(self.tabPages)
+        self.applistContent()
+        
+    def _refreshDisplay(self):
+        self.bodyContainer.removeWidget(self.tabPages)
+        print('[Refresh] Clearing')
+        self._appsDisplay()
+        print('[Refresh] Re-Index\'d')
+        
+    def topBarContent(self):
+        Layout = QHBoxLayout()
+        # Main 
+        refresh = QPushButton('Refresh')
+        refresh.clicked.connect(self._refreshDisplay)
+        exit = QPushButton('Exit')
+        exit.clicked.connect(sys.exit)
+        
+        topBarWidgets = [refresh, exit]
+        for widget in topBarWidgets:
+            Layout.addWidget(widget)
+        
+        # currentPath = QTimer(self)
+        # currentPath.setInterval(125)
+        # # currentPath.timeout.connect()
+        
+        Layout.addStretch()
+        return Layout
+    
+    def applistContent(self, path:str=None) -> QVBoxLayout:
+        # ## NOTE: i just need to add refresh logic and add path-change logic aswell
+        
+        def currentDir(paths:str):
+            return os.path.join(path,paths)
+        def addAppX():
+            XContents.addWidget(self.appButton(appPath, (90,64), self.launcher))
+            print("[Adding]", index, appPath)
+        def newPage():
+            # Container
+            pageCanvas = QWidget()
+            # Each Complete Row
+            pageVContents = QVBoxLayout()
+            # Each Item Listed
+            pageHContents = QHBoxLayout()
+            
+            # Add Contents to Container
+            pageCanvas.setLayout(pageVContents)
+            pageVContents.addStretch()
+            pageVContents.addLayout(pageHContents)
+            return pageCanvas, pageVContents, pageHContents
+        
+        Container, YContents, XContents = newPage()
+        tabIndex = 0
+        showHidden = False
+        path = "./" if not path else path
+        
+        # TODO: Add Path Address bar + Show Hidden
+        # Temp Override
+        # path = r"F:\z. Old Stuff\E.Random pics"
+        # path = r"F:\z. Old Stuff\Z.Old_Downloads\HatsuneMiku_Domino's_Pizza\Payload\domino.app"
+        # path = r"C:\Windows\System32"
+        path = r'C:\Users\Junky\Desktop'
+        
+        ##################### THE INDEX STARTS ON INDEX 0 ############################
+        index:dict[list[int], int] = {
+            "x":[0,(self.width() // 92) - 1],
+            "y":[0,(self.height() // 64) - 4]
+            }
+                
+        if os.path.exists(currentDir('.hidden')):
+            with open(os.path.join(path,'.hidden'), 'r') as file:
+                global hiddenList
+                hiddenList = file.readlines()
+                for name in hiddenList:
+                    if not name.endswith('\n'): continue
+                    hiddenList[hiddenList.index(name)] = name.removesuffix('\n')
+                print(hiddenList)
+        else:
+            hiddenList = []
+            
+        appList = os.listdir(path)
+        # # Total (285 - 19) icons @ 1080p
+        for app in appList:
+            appPath = os.path.join(path, app)
+            # loose, .hidden w/ or w/o .extension
+            if app.startswith('.') or app.split('.')[0] in hiddenList or app in hiddenList:
+                if not showHidden: 
+                    print(f"[Hidden] skip {appPath}")
+                    continue
+            if os.path.isfile(appPath):
+                if index.get('x')[0] < index.get('x')[1]:
+                    addAppX()
+                    index.get('x')[0] += 1
+                elif index.get('y')[0] < index.get('y')[1]:
+                    index.get('y')[0] += 1
+                    XContents = QHBoxLayout()
+                    YContents.addLayout(XContents)
+                    addAppX()
+                    ####################### BUT IT STARTS ON INDEX 1 ON A NEW ROW ######################
+                    ##################### THIS BUGS THE SHIT OUT OF ME #################################
+                    ## BUT MY GUI LOOKS FINE AND ALL ALIGNED AND NO EXCESS BUTTONS ADDED OR LOST #######
+                    index.get('x')[0] = 1
+                    print(f'[New Line] {index}')
+                else:
+                    YContents.addStretch()
+                    self.tabPages.addTab(Container,f'Apps_{tabIndex}')
+                    tabIndex += 1
+                    index.get('x')[0] = 1
+                    index.get('y')[0] = 0
+                    Container, YContents, XContents = newPage()
+                    self.tabPages.addTab(Container,f'Apps_{tabIndex}')
+                    print(f'[New Tab] {appPath} {index}')
+                    addAppX()
+        else:
+            print(f'[Adding] Incomplete Tab y:{index.get('y')}') if index.get('y')[0] < index.get('y')[1] else print(f'[Adding] Nice y:{index.get('y')}')
+            self.tabPages.addTab(Container,f'Apps_{tabIndex}') if index.get('y')[0] < index.get('y')[1] else print(f'[Adding] Complete Tab y:{index.get('y')}')
+            YContents.addStretch()
+            print('[Finish]')
+            # self.tabPages.addTab(Container,'Test')
+                    
+    def appButton(self, path: str, geometry: tuple, callback) -> QPushButton:
+        x, y = geometry
+        button = QPushButton(self)
+        button.setFixedSize(x, y)
+        button.setStyleSheet("QPushButton {padding: 0px}")
+        layout = QVBoxLayout(button)
+        layout.setContentsMargins(7, 7, 7, 7)
+        layout.setSpacing(2)
+        button.setLayout(layout)
+        
+        icon = QLabel()
+        icon.setPixmap(QAbstractFileIconProvider().icon(QFileInfo(path)).pixmap(32, 32))
+        icon.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        icon.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+        
+        appname = QLabel(os.path.basename(path))
+        appname.setWordWrap(True)
+        appname.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        appname.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+        
+        layout.addWidget(icon)
+        layout.addWidget(appname)
+        
+        def exec():
+            callback(path)
+        button.clicked.connect(exec)
+        return button
+    
+    def launcher(self, osCode=None):
+        statusCode = os.system(f'START "" "{osCode}"')
+        print(f"[ {'OK' if statusCode == 0 else f'ERR {statusCode}'} ] {osCode if osCode else 'No Command Executed'}")
+        
+
+WindowInstance = MainWindow()
+sys.exit(APP.exec())
