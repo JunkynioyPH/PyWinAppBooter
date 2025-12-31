@@ -1,4 +1,4 @@
-A PyQt6 GUI which indexes an ntpath and makes a Button GUI to pick which app to launch:
+A PyQt6 GUI App, compiled to **.exe** with PyInstaller, which indexes an ntpath and makes a Button GUI to pick which app to launch:
 - **os.system("START '' '.\path\to\file.*'")**, in Linux, Proton. 
 
 Yes, there is a thing called **virtual desktop** in proton, but I use steam and have steamtinkerlaunch.
