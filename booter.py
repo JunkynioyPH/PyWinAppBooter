@@ -31,9 +31,8 @@ class MainWindow(QMainWindow):
         self.bodyContainer = QHBoxLayout()
         self.bodyGroup.setLayout(self.bodyContainer)
         
-        print(self.size())
         self.showFullScreen()
-        print(self.size())
+        self.setFixedSize(self.size())
         
         self._appsDisplay()
 
@@ -48,7 +47,6 @@ class MainWindow(QMainWindow):
         print('[Refresh] Clearing')
         self._appsDisplay()
         print('[Refresh] Re-Index\'d')
-        print(self.size())
         
     def topBarContent(self):
         Layout = QHBoxLayout()
@@ -76,7 +74,7 @@ class MainWindow(QMainWindow):
             return os.path.join(path,paths)
         def addAppX():
             XContents.addWidget(self.appButton(appPath, (92,68), self.launcher))
-            # print("[Adding]", index, appPath)
+            print("[Adding]", index, appPath)
         def newPage():
             # Container
             pageCanvas = QWidget()
@@ -105,6 +103,11 @@ class MainWindow(QMainWindow):
         # path = r'C:\Users\Junky\Desktop'
         
         ##################### THE INDEX STARTS ON INDEX 0 ############################
+        ### Unsure how to keep this uniform for all resolutions,
+        ###  however this is tuned specifically for 1920x1080.
+        ###
+        ### Though, tested on windowed mode, diff resolutions, it displays well enough.
+        ##############################################################################
         index:dict[list[int], int] = {
             "x":[0,(self.width() // 97)],
             "y":[0,(self.height() // 90)]
