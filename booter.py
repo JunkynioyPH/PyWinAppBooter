@@ -31,7 +31,10 @@ class MainWindow(QMainWindow):
         self.bodyContainer = QHBoxLayout()
         self.bodyGroup.setLayout(self.bodyContainer)
         
+        print(self.size())
         self.showFullScreen()
+        print(self.size())
+        
         self._appsDisplay()
 
         
@@ -45,6 +48,7 @@ class MainWindow(QMainWindow):
         print('[Refresh] Clearing')
         self._appsDisplay()
         print('[Refresh] Re-Index\'d')
+        print(self.size())
         
     def topBarContent(self):
         Layout = QHBoxLayout()
@@ -71,8 +75,8 @@ class MainWindow(QMainWindow):
         def currentDir(paths:str):
             return os.path.join(path,paths)
         def addAppX():
-            XContents.addWidget(self.appButton(appPath, (90,64), self.launcher))
-            print("[Adding]", index, appPath)
+            XContents.addWidget(self.appButton(appPath, (92,68), self.launcher))
+            # print("[Adding]", index, appPath)
         def newPage():
             # Container
             pageCanvas = QWidget()
@@ -83,8 +87,9 @@ class MainWindow(QMainWindow):
             
             # Add Contents to Container
             pageCanvas.setLayout(pageVContents)
-            pageVContents.addStretch()
+            # pageVContents.addStretch()
             pageVContents.addLayout(pageHContents)
+            pageHContents.addStretch()
             return pageCanvas, pageVContents, pageHContents
         
         Container, YContents, XContents = newPage()
@@ -96,13 +101,13 @@ class MainWindow(QMainWindow):
         # Temp Override
         # path = r"F:\z. Old Stuff\E.Random pics"
         # path = r"F:\z. Old Stuff\Z.Old_Downloads\HatsuneMiku_Domino's_Pizza\Payload\domino.app"
-        # path = r"C:\Windows\System32"
-        path = r'C:\Users\Junky\Desktop'
+        path = r"C:\Windows\System32"
+        # path = r'C:\Users\Junky\Desktop'
         
         ##################### THE INDEX STARTS ON INDEX 0 ############################
         index:dict[list[int], int] = {
-            "x":[0,(self.width() // 92) - 1],
-            "y":[0,(self.height() // 64) - 4]
+            "x":[0,(self.width() // 97)],
+            "y":[0,(self.height() // 90)]
             }
                 
         if os.path.exists(currentDir('.hidden')):
@@ -131,7 +136,9 @@ class MainWindow(QMainWindow):
                     index.get('x')[0] += 1
                 elif index.get('y')[0] < index.get('y')[1]:
                     index.get('y')[0] += 1
+                    XContents.addStretch()
                     XContents = QHBoxLayout()
+                    XContents.addStretch()
                     YContents.addLayout(XContents)
                     addAppX()
                     ####################### BUT IT STARTS ON INDEX 1 ON A NEW ROW ######################
@@ -141,6 +148,7 @@ class MainWindow(QMainWindow):
                     print(f'[New Line] {index}')
                 else:
                     YContents.addStretch()
+                    XContents.addStretch()
                     self.tabPages.addTab(Container,f'Apps_{tabIndex}')
                     tabIndex += 1
                     index.get('x')[0] = 1
@@ -151,6 +159,7 @@ class MainWindow(QMainWindow):
                     addAppX()
         else:
             print(f'[Adding] Incomplete Tab y:{index.get('y')}') if index.get('y')[0] < index.get('y')[1] else print(f'[Adding] Nice y:{index.get('y')}')
+            XContents.addStretch() if index.get('y')[0] < index.get('y')[1] else ''
             self.tabPages.addTab(Container,f'Apps_{tabIndex}') if index.get('y')[0] < index.get('y')[1] else print(f'[Adding] Complete Tab y:{index.get('y')}')
             YContents.addStretch()
             print('[Finish]')
