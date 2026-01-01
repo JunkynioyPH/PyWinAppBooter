@@ -8,7 +8,6 @@ APP = QApplication([])
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-
         # Modifiable Space
         Canvas = QWidget(self) 
         self.setCentralWidget(Canvas)
@@ -194,6 +193,7 @@ class MainWindow(QMainWindow):
         def exec():
             callback(path)
         button.clicked.connect(exec)
+        button.setToolTip(path)
         return button
     
     def launcher(self, osCode=None):
