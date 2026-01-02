@@ -23,6 +23,9 @@ class MainWindow(QMainWindow):
         TopBar = QHBoxLayout()
         VCanvas.addLayout(TopBar)
         TopBar.addLayout(self.topBarContent())
+        self.navTextBar.setPlaceholderText('Enter a path to scan...')
+        self.navTextBar.returnPressed.connect(self._refreshDisplay)
+        # self.navTextBar.setText('poggers')
         
         # Main Body
         self.bodyGroup = QGroupBox(" Applications ")
@@ -33,7 +36,7 @@ class MainWindow(QMainWindow):
         self.showFullScreen()
         self.setFixedSize(self.size())
         
-        self._appsDisplay()
+        self._appsDisplay() if self.navTextBar.text() != '' else ''
 
         
     def _appsDisplay(self):
@@ -42,22 +45,30 @@ class MainWindow(QMainWindow):
         self.applistContent()
         
     def _refreshDisplay(self):
-        self.bodyContainer.removeWidget(self.tabPages)
-        print('[Refresh] Clearing')
+        try:
+            self.bodyContainer.removeWidget(self.tabPages)
+            print('[Re-Scan] Clearing')
+        except AttributeError:
+            print('[Re-Scan] No Tabs to clear')
+            
         self._appsDisplay()
-        print('[Refresh] Re-Index\'d')
+        print('[Re-Scan] Re-Index\'d')
         
     def topBarContent(self):
         Layout = QHBoxLayout()
         # Main 
-        refresh = QPushButton('Refresh')
+        refresh = QPushButton('Scan/Refresh')
         refresh.clicked.connect(self._refreshDisplay)
         exit = QPushButton('Exit')
         exit.clicked.connect(sys.exit)
+        navBar = QVBoxLayout()
+        self.navTextBar = QLineEdit()
+        self.navTextBar.setFixedHeight(25)
+        navBar.addWidget(self.navTextBar)
         
-        topBarWidgets = [refresh, exit]
-        for widget in topBarWidgets:
-            Layout.addWidget(widget)
+        Layout.addWidget(exit)
+        Layout.addLayout(navBar)
+        Layout.addWidget(refresh)
         
         # currentPath = QTimer(self)
         # currentPath.setInterval(125)
@@ -66,11 +77,11 @@ class MainWindow(QMainWindow):
         Layout.addStretch()
         return Layout
     
-    def applistContent(self, path:str=None) -> QVBoxLayout:
+    def applistContent(self):
         # ## NOTE: i just need to add refresh logic and add path-change logic aswell
         
         def currentDir(paths:str):
-            return os.path.join(path,paths)
+            return os.path.join(self.path,paths)
         def addAppX():
             XContents.addWidget(self.appButton(appPath, (92,68), self.launcher))
             print("[Adding]", index, appPath)
@@ -92,14 +103,11 @@ class MainWindow(QMainWindow):
         Container, YContents, XContents = newPage()
         tabIndex = 0
         showHidden = False
-        path = "./" if not path else path
+        navBarPath = self.navTextBar.text()
+        self.navTextBar.setText('.\\') if self.navTextBar.text() == '' else 'TODO: set to prev path'
+        self.path = "./" if navBarPath == '' else navBarPath
         
         # TODO: Add Path Address bar + Show Hidden
-        # Temp Override
-        # path = r"F:\z. Old Stuff\E.Random pics"
-        # path = r"F:\z. Old Stuff\Z.Old_Downloads\HatsuneMiku_Domino's_Pizza\Payload\domino.app"
-        path = r"C:\Windows\System32"
-        # path = r'C:\Users\Junky\Desktop'
         
         ##################### THE INDEX STARTS ON INDEX 0 ############################
         ### Unsure how to keep this uniform for all resolutions,
@@ -113,7 +121,7 @@ class MainWindow(QMainWindow):
             }
                 
         if os.path.exists(currentDir('.hidden')):
-            with open(os.path.join(path,'.hidden'), 'r') as file:
+            with open(os.path.join(self.path,'.hidden'), 'r') as file:
                 global hiddenList
                 hiddenList = file.readlines()
                 for name in hiddenList:
@@ -122,11 +130,13 @@ class MainWindow(QMainWindow):
                 print(hiddenList)
         else:
             hiddenList = []
-            
-        appList = os.listdir(path)
+        
+        self.path = '.\\' if not os.path.exists(self.path) or not os.path.isdir(self.path) else self.path
+        self.navTextBar.setText('.\\') if self.path == '.\\' else ''
+        appList = os.listdir(self.path)
         # # Total (285 - 19) icons @ 1080p
         for app in appList:
-            appPath = os.path.join(path, app)
+            appPath = os.path.join(self.path, app)
             # loose, .hidden w/ or w/o .extension
             if app.startswith('.') or app.split('.')[0] in hiddenList or app in hiddenList:
                 if not showHidden: 
@@ -169,6 +179,7 @@ class MainWindow(QMainWindow):
                     
     def appButton(self, path: str, geometry: tuple, callback) -> QPushButton:
         x, y = geometry
+        path = os.path.abspath(path)
         button = QPushButton(self)
         button.setFixedSize(x, y)
         button.setStyleSheet("QPushButton {padding: 0px}")
