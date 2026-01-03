@@ -36,7 +36,7 @@ class MainWindow(QMainWindow):
         self.showFullScreen()
         self.setFixedSize(self.size())
         
-        self._appsDisplay() if self.navTextBar.text() != '' else ''
+        self._appsDisplay() # if self.navTextBar.text() != '' else ''
 
         
     def _appsDisplay(self):
@@ -57,7 +57,7 @@ class MainWindow(QMainWindow):
     def topBarContent(self):
         Layout = QHBoxLayout()
         # Main 
-        refresh = QPushButton('Scan/Refresh')
+        refresh = QPushButton('Re/Scan')
         refresh.clicked.connect(self._refreshDisplay)
         exit = QPushButton('Exit')
         exit.clicked.connect(sys.exit)
@@ -67,7 +67,7 @@ class MainWindow(QMainWindow):
         navBar.addWidget(self.navTextBar)
         
         Layout.addWidget(exit)
-        Layout.addLayout(navBar)
+        Layout.addLayout(navBar) # Might change to just add widget, not add layout, i did this thinking i'd add another widget.
         Layout.addWidget(refresh)
         
         # currentPath = QTimer(self)
