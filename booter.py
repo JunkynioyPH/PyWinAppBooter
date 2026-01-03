@@ -59,16 +59,21 @@ class MainWindow(QMainWindow):
         # Main 
         refresh = QPushButton('Re/Scan')
         refresh.clicked.connect(self._refreshDisplay)
+        
         exit = QPushButton('Exit')
         exit.clicked.connect(sys.exit)
-        navBar = QVBoxLayout()
+        
         self.navTextBar = QLineEdit()
         self.navTextBar.setFixedHeight(25)
-        navBar.addWidget(self.navTextBar)
+        
+        self.hidden = QPushButton('Show Hidden')
+        self.hidden.setCheckable(True)
+        
         
         Layout.addWidget(exit)
-        Layout.addLayout(navBar) # Might change to just add widget, not add layout, i did this thinking i'd add another widget.
+        Layout.addWidget(self.navTextBar) # Might change to just add widget, not add layout, i did this thinking i'd add another widget.
         Layout.addWidget(refresh)
+        Layout.addWidget(self.hidden)
         
         # currentPath = QTimer(self)
         # currentPath.setInterval(125)
@@ -102,7 +107,7 @@ class MainWindow(QMainWindow):
         
         Container, YContents, XContents = newPage()
         tabIndex = 0
-        showHidden = False
+        showHidden = self.hidden.isChecked()
         navBarPath = self.navTextBar.text()
         self.navTextBar.setText('.\\') if self.navTextBar.text() == '' else 'TODO: set to prev path'
         self.path = "./" if navBarPath == '' else navBarPath
@@ -182,7 +187,6 @@ class MainWindow(QMainWindow):
         path = os.path.abspath(path)
         button = QPushButton(self)
         button.setFixedSize(x, y)
-        button.setStyleSheet("QPushButton {padding: 0px}")
         layout = QVBoxLayout(button)
         layout.setContentsMargins(7, 7, 7, 7)
         layout.setSpacing(2)
