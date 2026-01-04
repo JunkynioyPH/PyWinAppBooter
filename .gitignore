@@ -2,3 +2,5 @@ build
 dist
 *.spec
 clrsc.py
+.history
+.hidden

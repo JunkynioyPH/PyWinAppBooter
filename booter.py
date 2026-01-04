@@ -22,11 +22,13 @@ class MainWindow(QMainWindow):
         # Top Bar 
         TopBar = QHBoxLayout()
         VCanvas.addLayout(TopBar)
+        TopBar.addStretch()
         TopBar.addLayout(self.topBarContent())
         self.navTextBar.setPlaceholderText('Enter a path to scan...')
         self.navTextBar.returnPressed.connect(self._refreshDisplay)
+        TopBar.addStretch()
         # self.navTextBar.setText('poggers')
-        
+         
         # Main Body
         self.bodyGroup = QGroupBox(" Applications ")
         VCanvas.addWidget(self.bodyGroup)
@@ -36,24 +38,82 @@ class MainWindow(QMainWindow):
         self.showFullScreen()
         self.setFixedSize(self.size())
         
-        self._appsDisplay() # if self.navTextBar.text() != '' else ''
-
+        self._appsDisplay()
         
+    # Just display the list
     def _appsDisplay(self):
         self.tabPages = QTabWidget()
         self.bodyContainer.addWidget(self.tabPages)
         self.applistContent()
+    
+    # refresh from prev path in combo list
+    def _refreshFromPrevPath(self):
+        self.navTextBar.setText(self.prevPath.currentText())
+        self._refreshDisplay()
         
+    # clear and re-display
     def _refreshDisplay(self):
         try:
             self.bodyContainer.removeWidget(self.tabPages)
             print('[Re-Scan] Clearing')
         except AttributeError:
             print('[Re-Scan] No Tabs to clear')
-            
+        self._updateHistory()
         self._appsDisplay()
         print('[Re-Scan] Re-Index\'d')
+    
+    # update the history file and update the list
+    def _ifPathHistoryExists(self, item):
+        with open('.\\.history','r') as history:
+            historyList = [name.removesuffix('\n') for name in history.readlines()]
+            if item in historyList:
+                print(f"[History] <{item}> Exists in History")
+                return True
+            else:
+                print(f"[History] <{item}> Does not Exist in History")
+                return False
+            
+    def _updateHistory(self):
+        text = self.navTextBar.text()
+        # finalScore = 0
+        if not self._ifPathHistoryExists(text) and os.path.exists(text):
+            ### It's supposed to return a score that if it already matches
+            ### something in the ./.history, it wont add it to the list depending on score
+            ### but i realised it's partially kinda the same as self._ifPathHistoryExists()
+            # with open('.\\.history', 'r') as history:
+            #     score = 0
+            #     for line in history.readlines():
+            #         # i forgot how to do the opposite of this and my head hurt
+            #         compareIntersect = set(text) & set(line.removesuffix('\n'))
+            #
+            #         newScore = len(compareIntersect)
+            #         score = newScore if newScore > score else score
+            #         print("[_updateHistory] Comparing: ",set(text), set(line.removesuffix('\n')), 'Score:', score)
+            #         print('[_updateHistory] Found Common:', compareIntersect, f'{(score / len(text))*100}%')
+            #     else:
+            #         finalScore = (score / len(text)) * 100
+            #         print('[_updateHistory] Score', finalScore)
+            # if finalScore < float(95): 
+            with open('.\\.history', 'a') as history:
+                history.write(f"{text}\n")
+                print(f'[History] Appended <{text}>', )
+        self._refreshPrevPathList()
         
+    # refresh combobox
+    def _refreshPrevPathList(self):
+        self.prevPath.clear()
+        self.prevPath.setCurrentText(None)
+        if os.path.exists('.\\.history'):
+            with open('.\\.history', 'r') as history:
+                for name in history.readlines():
+                    self.prevPath.addItem(name.removesuffix('\n'))
+                    print(f'[History] Adding <{name.removesuffix('\n')}>')
+                print('[History] Loaded')
+        else:
+            with open('.\\.history', 'w'):
+                print('[History] Created file')
+        self.prevPath.setCurrentText(self.navTextBar.text())
+    
     def topBarContent(self):
         Layout = QHBoxLayout()
         # Main 
@@ -65,31 +125,29 @@ class MainWindow(QMainWindow):
         
         self.navTextBar = QLineEdit()
         self.navTextBar.setFixedHeight(25)
+        self.navTextBar.setFixedWidth(self.width()) # Before fullscreen, so it's the default 800x640 thing whatever
         
         self.hidden = QPushButton('Show Hidden')
         self.hidden.setCheckable(True)
         
-        
-        Layout.addWidget(exit)
-        Layout.addWidget(self.navTextBar) # Might change to just add widget, not add layout, i did this thinking i'd add another widget.
-        Layout.addWidget(refresh)
+        self.prevPath = QComboBox()
+        self.prevPath.setFixedWidth(self.width()) # Before fullscreen, so it's the default 800x640 thing whatever
+        self.prevPath.textActivated.connect(self._refreshFromPrevPath)
+        self._refreshPrevPathList()
+            
         Layout.addWidget(self.hidden)
-        
-        # currentPath = QTimer(self)
-        # currentPath.setInterval(125)
-        # # currentPath.timeout.connect()
-        
-        Layout.addStretch()
+        Layout.addWidget(refresh)
+        Layout.addWidget(self.navTextBar)
+        Layout.addWidget(self.prevPath)
+        Layout.addWidget(exit)
         return Layout
     
     def applistContent(self):
-        # ## NOTE: i just need to add refresh logic and add path-change logic aswell
-        
         def currentDir(paths:str):
             return os.path.join(self.path,paths)
         def addAppX():
             XContents.addWidget(self.appButton(appPath, (92,68), self.launcher))
-            print("[Adding]", index, appPath)
+            print("[Button] Creating", index, f"<{appPath}>")
         def newPage():
             # Container
             pageCanvas = QWidget()
@@ -109,10 +167,8 @@ class MainWindow(QMainWindow):
         tabIndex = 0
         showHidden = self.hidden.isChecked()
         navBarPath = self.navTextBar.text()
-        self.navTextBar.setText('.\\') if self.navTextBar.text() == '' else 'TODO: set to prev path'
-        self.path = "./" if navBarPath == '' else navBarPath
-        
-        # TODO: Add Path Address bar + Show Hidden
+        self.navTextBar.setText('.\\') if self.navTextBar.text() == '' else self.navTextBar.setText(self.prevPath.currentText())
+        self.path = ".\\" if navBarPath == '' else navBarPath
         
         ##################### THE INDEX STARTS ON INDEX 0 ############################
         ### Unsure how to keep this uniform for all resolutions,
@@ -132,20 +188,22 @@ class MainWindow(QMainWindow):
                 for name in hiddenList:
                     if not name.endswith('\n'): continue
                     hiddenList[hiddenList.index(name)] = name.removesuffix('\n')
-                print(hiddenList)
         else:
             hiddenList = []
         
         self.path = '.\\' if not os.path.exists(self.path) or not os.path.isdir(self.path) else self.path
         self.navTextBar.setText('.\\') if self.path == '.\\' else ''
+        
         appList = os.listdir(self.path)
+        print('[Scan] Start',f'<{self.path}>')
         # # Total (285 - 19) icons @ 1080p
         for app in appList:
             appPath = os.path.join(self.path, app)
             # loose, .hidden w/ or w/o .extension
             if app.startswith('.') or app.split('.')[0] in hiddenList or app in hiddenList:
                 if not showHidden: 
-                    print(f"[Hidden] skip {appPath}")
+                    if not os.path.isfile(appPath): continue
+                    print(f"[Hidden] Skip <{appPath}>")
                     continue
             if os.path.isfile(appPath):
                 if index.get('x')[0] < index.get('x')[1]:
@@ -162,7 +220,7 @@ class MainWindow(QMainWindow):
                     ##################### THIS BUGS THE SHIT OUT OF ME #################################
                     ## BUT MY GUI LOOKS FINE AND ALL ALIGNED AND NO EXCESS BUTTONS ADDED OR LOST #######
                     index.get('x')[0] = 1
-                    print(f'[New Line] {index}')
+                    print(f'[Scan] New row {index} <{appPath}>')
                 else:
                     YContents.addStretch()
                     XContents.addStretch()
@@ -172,14 +230,14 @@ class MainWindow(QMainWindow):
                     index.get('y')[0] = 0
                     Container, YContents, XContents = newPage()
                     self.tabPages.addTab(Container,f'Apps_{tabIndex}')
-                    print(f'[New Tab] {appPath} {index}')
+                    print(f'[Scan] New Tab {index} <{appPath}>')
                     addAppX()
         else:
-            print(f'[Adding] Incomplete Tab y:{index.get('y')}') if index.get('y')[0] < index.get('y')[1] else print(f'[Adding] Nice y:{index.get('y')}')
+            print(f'[Scan] Adding Incomplete Tab y:{index.get('y')}') if index.get('y')[0] < index.get('y')[1] else print(f'[Scan] Nice y:{index.get('y')}')
             XContents.addStretch() if index.get('y')[0] < index.get('y')[1] else ''
-            self.tabPages.addTab(Container,f'Apps_{tabIndex}') if index.get('y')[0] < index.get('y')[1] else print(f'[Adding] Complete Tab y:{index.get('y')}')
+            self.tabPages.addTab(Container,f'Apps_{tabIndex}') if index.get('y')[0] < index.get('y')[1] else print(f'[Scan] Adding Complete Tab y:{index.get('y')}')
             YContents.addStretch()
-            print('[Finish]')
+            print('[Scan] Finished')
             # self.tabPages.addTab(Container,'Test')
                     
     def appButton(self, path: str, geometry: tuple, callback) -> QPushButton:
