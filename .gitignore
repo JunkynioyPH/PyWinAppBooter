@@ -4,3 +4,5 @@ dist
 clrsc.py
 .history
 .hidden
+.venv
+__pycache__

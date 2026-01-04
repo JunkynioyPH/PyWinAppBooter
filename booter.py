@@ -1,13 +1,21 @@
 from PyQt6.QtWidgets import *
-from PyQt6.QtCore import QFileInfo, Qt, QTimer
+from PyQt6.QtCore import QFileInfo, Qt
 from PyQt6.QtGui import QAbstractFileIconProvider
-import os, sys, json
+import darkmode 
+import os, sys
 
 APP = QApplication([])
-
+APP.setStyle('Fusion')
+APP.setPalette(darkmode.get_mint_blue_dark_palette())
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
+        self.rootPath = os.path.abspath('.\\')
+        self.historyPath = os.path.join(self.rootPath, '.\\.history')
+        print('[Root Path]', self.rootPath, "\n[Root Path]", self.historyPath)
+        # self.
+        
+        
         # Modifiable Space
         Canvas = QWidget(self) 
         self.setCentralWidget(Canvas)
@@ -64,7 +72,7 @@ class MainWindow(QMainWindow):
     
     # update the history file and update the list
     def _ifPathHistoryExists(self, item):
-        with open('.\\.history','r') as history:
+        with open(self.historyPath,'r') as history:
             historyList = [name.removesuffix('\n') for name in history.readlines()]
             if item in historyList:
                 print(f"[History] <{item}> Exists in History")
@@ -94,7 +102,7 @@ class MainWindow(QMainWindow):
             #         finalScore = (score / len(text)) * 100
             #         print('[_updateHistory] Score', finalScore)
             # if finalScore < float(95): 
-            with open('.\\.history', 'a') as history:
+            with open(self.historyPath, 'a') as history:
                 history.write(f"{text}\n")
                 print(f'[History] Appended <{text}>', )
         self._refreshPrevPathList()
@@ -103,14 +111,14 @@ class MainWindow(QMainWindow):
     def _refreshPrevPathList(self):
         self.prevPath.clear()
         self.prevPath.setCurrentText(None)
-        if os.path.exists('.\\.history'):
-            with open('.\\.history', 'r') as history:
+        if os.path.exists(self.historyPath):
+            with open(self.historyPath, 'r') as history:
                 for name in history.readlines():
                     self.prevPath.addItem(name.removesuffix('\n'))
                     print(f'[History] Adding <{name.removesuffix('\n')}>')
                 print('[History] Loaded')
         else:
-            with open('.\\.history', 'w'):
+            with open(self.historyPath, 'w'):
                 print('[History] Created file')
         self.prevPath.setCurrentText(self.navTextBar.text())
     
@@ -144,9 +152,9 @@ class MainWindow(QMainWindow):
     
     def applistContent(self):
         def currentDir(paths:str):
-            return os.path.join(self.path,paths)
+            return os.path.join(self.path, paths)
         def addAppX():
-            XContents.addWidget(self.appButton(appPath, (92,68), self.launcher))
+            XContents.addWidget(self.appButton(self.path, appPath, (92,68), self.launcher))
             print("[Button] Creating", index, f"<{appPath}>")
         def newPage():
             # Container
@@ -194,7 +202,7 @@ class MainWindow(QMainWindow):
         self.path = '.\\' if not os.path.exists(self.path) or not os.path.isdir(self.path) else self.path
         self.navTextBar.setText('.\\') if self.path == '.\\' else ''
         
-        appList = os.listdir(self.path)
+        appList = os.listdir(os.path.abspath(self.path))
         print('[Scan] Start',f'<{self.path}>')
         # # Total (285 - 19) icons @ 1080p
         for app in appList:
@@ -240,9 +248,10 @@ class MainWindow(QMainWindow):
             print('[Scan] Finished')
             # self.tabPages.addTab(Container,'Test')
                     
-    def appButton(self, path: str, geometry: tuple, callback) -> QPushButton:
+    def appButton(self, parentpath: str, path: str, geometry: tuple, callback) -> QPushButton:
         x, y = geometry
         path = os.path.abspath(path)
+        parentpath = os.path.abspath(parentpath)
         button = QPushButton(self)
         button.setFixedSize(x, y)
         layout = QVBoxLayout(button)
@@ -264,14 +273,15 @@ class MainWindow(QMainWindow):
         layout.addWidget(appname)
         
         def exec():
-            callback(path)
+            callback(parentpath, path)
         button.clicked.connect(exec)
         button.setToolTip(path)
         return button
     
-    def launcher(self, osCode=None):
-        statusCode = os.system(f'START "" "{osCode}"')
-        print(f"[ {'OK' if statusCode == 0 else f'ERR {statusCode}'} ] {osCode if osCode else 'No Command Executed'}")
+    def launcher(self, parentpath=None, file=None):
+        os.chdir(parentpath)
+        statusCode = os.system(f'dir /w && START "" "{file}"')
+        print(f"[ {'OK' if statusCode == 0 else f'ERR {statusCode}'} ] {file if file else 'No Command Executed'}")
         
 
 WindowInstance = MainWindow()
